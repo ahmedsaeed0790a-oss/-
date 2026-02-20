@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AMG Flex | منصة المسلسلات</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -62,20 +62,34 @@
         .episode-card-wrapper:hover .episode-title { color: var(--primary); }
 
         /* --- مشغل الفيديو الاحترافي المحدث --- */
-        .player-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
+        .player-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
         
-        .video-container { position: relative; width: 100%; max-width: 1200px; background: #000; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; }
+        .video-container { position: relative; width: 100%; max-width: 1200px; height: auto; background: #000; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; }
         
-        /* توافق الشاشة الكاملة للموبايل */
-        .video-container:fullscreen { max-width: 100%; height: 100%; }
-        .video-container:-webkit-full-screen { max-width: 100%; height: 100%; }
+        /* إجبار ملء الشاشة القوي CSS */
+        .video-container:fullscreen, 
+        .video-container:-webkit-full-screen, 
+        .video-container:-moz-full-screen, 
+        .video-container:-ms-fullscreen { 
+            width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; margin: 0; padding: 0; 
+        }
         
         video { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; outline: none; background: #000; }
+        :fullscreen video, :-webkit-full-screen video { width: 100vw !important; height: 100vh !important; }
 
-        /* زر الإيقاف/التشغيل في منتصف الشاشة */
-        .center-play-pause { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.5); width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 1005; }
-        .center-play-pause.animate { animation: popPulse 0.5s ease-out forwards; }
-        @keyframes popPulse { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); } }
+        /* زر الإيقاف/التشغيل الدائم في منتصف الشاشة */
+        .center-play-pause { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            font-size: 45px; color: white; background: rgba(0,0,0,0.6); 
+            width: 85px; height: 85px; border-radius: 50%; display: flex; justify-content: center; align-items: center; 
+            opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.2s; z-index: 1005; cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        .center-play-pause:active { transform: translate(-50%, -50%) scale(0.9); }
+        
+        /* إظهار الأزرار والكنترول لما الشاشة تكون ملموسة (Active) */
+        .video-container.controls-active .center-play-pause { opacity: 1; pointer-events: auto; }
+        .video-container.controls-active .controls { opacity: 1; pointer-events: auto; }
 
         .skip-indicator { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; padding: 20px 30px; border-radius: 50%; font-size: 20px; font-weight: bold; display: none; z-index: 1005; pointer-events: none; text-align: center; }
         .skip-indicator i { display: block; font-size: 30px; margin-bottom: 5px; }
@@ -83,15 +97,14 @@
         .skip-indicator.left { left: 15%; }
         @keyframes fadeOutRipple { 0% { opacity: 1; transform: translateY(-50%) scale(0.8); } 50% { opacity: 1; transform: translateY(-50%) scale(1.1); } 100% { opacity: 0; transform: translateY(-50%) scale(1.3); } }
 
-        .controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 10px; opacity: 0; transition: opacity 0.4s; direction: ltr; z-index: 1010; }
-        .controls.active { opacity: 1; }
+        .controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.95)); padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 10px; opacity: 0; pointer-events: none; transition: opacity 0.4s; direction: ltr; z-index: 1010; }
         .controls-row { display: flex; align-items: center; gap: 20px; width: 100%; }
         .controls button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; transition: transform 0.2s, color 0.2s; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
         .controls button:hover { transform: scale(1.2); color: var(--primary); }
         
-        /* شريط التقدم المحسن للمس */
-        .progress-wrapper { width: 100%; padding: 15px 0; cursor: pointer; touch-action: none; /* لمنع نزول الشاشة عند السحب بالموبايل */ }
-        .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.2); border-radius: 5px; position: relative; transition: height 0.2s; }
+        /* شريط التقدم */
+        .progress-wrapper { width: 100%; padding: 15px 0; cursor: pointer; touch-action: none; }
+        .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; position: relative; transition: height 0.2s; }
         .progress-wrapper:hover .progress-container, .progress-wrapper:active .progress-container { height: 8px; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; border-radius: 5px; position: relative; pointer-events: none; }
         .progress-bar::after { content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; background: white; border-radius: 50%; opacity: 0; transition: opacity 0.2s; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
@@ -117,7 +130,7 @@
             .controls button { font-size: 20px; width: 30px; height: 30px;}
             .time { font-size: 12px; }
             .close-player { top: 20px; right: 20px; font-size: 30px; }
-            .center-play-pause { width: 70px; height: 70px; font-size: 40px; }
+            .center-play-pause { width: 70px; height: 70px; font-size: 35px; }
         }
     </style>
 </head>
@@ -153,7 +166,7 @@
         <i class="fa-solid fa-times close-player" onclick="closePlayer()"></i>
         <div class="video-container" id="videoContainer">
             
-            <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-play"></i></div>
+            <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-pause"></i></div>
 
             <div class="skip-indicator left" id="skipLeft"><i class="fa-solid fa-backward-step"></i><span>10 ث</span></div>
             <div class="skip-indicator right" id="skipRight"><i class="fa-solid fa-forward-step"></i><span>10 ث</span></div>
@@ -254,20 +267,19 @@
 
         window.showMainView = () => { episodesView.style.display = 'none'; mainView.style.display = 'block'; }
 
-        // --- مشغل الفيديو ---
+        // --- مشغل الفيديو الاحترافي ---
         const video = document.getElementById('customVideo');
         const playerOverlay = document.getElementById('playerOverlay');
         const playPauseBtn = document.getElementById('playPauseBtn');
+        const centerPlayIcon = document.getElementById('centerPlayIcon');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
         const timeDisplay = document.getElementById('timeDisplay');
         const muteBtn = document.getElementById('muteBtn');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const videoContainer = document.getElementById('videoContainer');
-        const videoControls = document.getElementById('videoControls');
         const skipLeft = document.getElementById('skipLeft');
         const skipRight = document.getElementById('skipRight');
-        const centerPlayIcon = document.getElementById('centerPlayIcon');
 
         let controlsTimeout;
 
@@ -276,7 +288,7 @@
             playerOverlay.style.display = 'flex';
             video.play();
             updatePlayIcon();
-            showControlsTemp();
+            resetControlsTimeout();
             video.focus();
         };
 
@@ -288,79 +300,73 @@
         };
 
         function togglePlay() {
-            if (video.paused) {
-                video.play();
-                animateCenterIcon('fa-play');
-            } else {
-                video.pause();
-                animateCenterIcon('fa-pause');
-            }
+            if (video.paused) video.play();
+            else video.pause();
             updatePlayIcon();
-            showControlsTemp();
+            resetControlsTimeout();
         }
 
+        // تحديث أيقونة الشريط والزر اللي في النص مع بعض
         function updatePlayIcon() {
-            playPauseBtn.innerHTML = video.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
-        }
-
-        function animateCenterIcon(iconClass) {
-            centerPlayIcon.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
-            centerPlayIcon.classList.remove('animate');
-            void centerPlayIcon.offsetWidth; // Force reflow
-            centerPlayIcon.classList.add('animate');
+            const iconHTML = video.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+            playPauseBtn.innerHTML = iconHTML;
+            centerPlayIcon.innerHTML = iconHTML;
         }
 
         playPauseBtn.onclick = togglePlay;
+        
+        // الضغط على الزر اللي في النص يوقف/يشغل
+        centerPlayIcon.onclick = (e) => {
+            e.stopPropagation(); // منع التداخل مع لمس الشاشة العادي
+            togglePlay();
+        };
 
-        function showControlsTemp() {
-            videoControls.classList.add('active');
+        // إظهار وإخفاء أدوات التحكم بذكاء (الكنترول والزر النصي)
+        function resetControlsTimeout() {
+            videoContainer.classList.add('controls-active');
             videoContainer.style.cursor = "default";
             clearTimeout(controlsTimeout);
             controlsTimeout = setTimeout(() => {
                 if(!video.paused) {
-                    videoControls.classList.remove('active');
+                    videoContainer.classList.remove('controls-active');
                     videoContainer.style.cursor = "none";
                 }
             }, 3000);
         }
+
+        function toggleControls() {
+            if (videoContainer.classList.contains('controls-active')) {
+                videoContainer.classList.remove('controls-active');
+                clearTimeout(controlsTimeout);
+            } else {
+                resetControlsTimeout();
+            }
+        }
         
-        videoContainer.addEventListener('mousemove', showControlsTemp);
+        videoContainer.addEventListener('mousemove', resetControlsTimeout);
 
-        // --- نظام اللمس والنقر الاحترافي المحدث ---
+        // --- نظام اللمس والنقر (يوتيوب ستايل) ---
         let lastTapTime = 0;
-        let tapTimeout;
+        let singleTapTimeout;
 
-        videoContainer.addEventListener('pointerup', (e) => {
-            // تجاهل النقر إذا كان على شريط التحكم نفسه
-            if (e.target.closest('.controls') || e.target.closest('.skip-indicator')) return;
-
+        video.addEventListener('pointerup', (e) => {
             const currentTime = new Date().getTime();
             const tapLength = currentTime - lastTapTime;
 
             if (tapLength < 300 && tapLength > 0) {
-                // نقر مزدوج
-                clearTimeout(tapTimeout);
-                if (e.pointerType === 'mouse') {
-                    toggleFullScreen(); // ماوس: النقر المزدوج يكبر الشاشة
-                } else {
-                    // لمس: النقر المزدوج يقدم ويؤخر
-                    const rect = videoContainer.getBoundingClientRect();
-                    const tapX = e.clientX - rect.left;
-                    if (tapX > rect.width / 2) skipForward();
-                    else skipBackward();
-                }
+                // نقر مزدوج (تقديم وتأخير)
+                clearTimeout(singleTapTimeout);
+                const rect = video.getBoundingClientRect();
+                const tapX = e.clientX - rect.left;
+                if (tapX > rect.width / 2) skipForward();
+                else skipBackward();
             } else {
                 // نقر مفرد
-                tapTimeout = setTimeout(() => {
+                singleTapTimeout = setTimeout(() => {
                     if (e.pointerType === 'mouse') {
-                        togglePlay(); // ماوس: يوقف ويشغل
+                        togglePlay(); // الماوس بيوقف ويشغل
                     } else {
-                        // لمس الموبايل: يظهر ويخفي الكنترول فقط
-                        if (videoControls.classList.contains('active')) {
-                            videoControls.classList.remove('active');
-                        } else {
-                            showControlsTemp();
-                        }
+                        toggleControls(); // الموبايل بيظهر ويخفي الأزرار بس
                     }
                 }, 300);
             }
@@ -374,7 +380,7 @@
             void el.offsetWidth;
             el.style.animation = 'fadeOutRipple 0.5s forwards';
             setTimeout(() => { el.style.display = 'none'; }, 500);
-            showControlsTemp();
+            resetControlsTimeout();
         }
 
         function skipForward() { video.currentTime = Math.min(video.currentTime + 10, video.duration || 0); showSkipIndicator('forward'); }
@@ -390,46 +396,41 @@
             }
         });
 
-        // --- نظام السحب والإفلات لشريط الوقت (متوافق مع الموبايل 100%) ---
+        // --- نظام السحب لشريط الوقت ---
         let isDragging = false;
         let wasPlaying = false;
 
         function updateScrub(e) {
             const rect = progressContainer.getBoundingClientRect();
-            // دعم الماوس واللمس
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             let pos = (clientX - rect.left) / rect.width;
-            pos = Math.max(0, Math.min(1, pos)); // حصر القيمة بين 0 و 1
+            pos = Math.max(0, Math.min(1, pos));
             progressBar.style.width = `${pos * 100}%`;
             timeDisplay.textContent = `${formatTime(pos * video.duration)} / ${formatTime(video.duration)}`;
             return pos;
         }
 
-        // عند بداية الضغط أو اللمس
         progressContainer.addEventListener('pointerdown', (e) => {
             isDragging = true;
             wasPlaying = !video.paused;
             video.pause();
             video.currentTime = updateScrub(e) * video.duration;
-            showControlsTemp();
+            resetControlsTimeout();
         });
 
-        // أثناء حركة الإصبع أو الماوس
         window.addEventListener('pointermove', (e) => {
             if (isDragging) {
                 video.currentTime = updateScrub(e) * video.duration;
-                showControlsTemp();
+                resetControlsTimeout();
             }
         });
 
-        // عند رفع الإصبع
         window.addEventListener('pointerup', (e) => {
             if (isDragging) {
                 isDragging = false;
                 if (wasPlaying) video.play();
             }
         });
-
 
         function formatTime(seconds) {
             if (isNaN(seconds)) return "00:00";
@@ -453,52 +454,60 @@
             muteBtn.innerHTML = video.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
         };
 
-        // --- ملء الشاشة القوي للموبايل والدوران ---
-        async function toggleFullScreen() {
-            const isFull = document.fullscreenElement || document.webkitFullscreenElement;
-            
-            if (!isFull) {
-                // فتح ملء الشاشة مع دعم متصفحات الموبايل (سفاري وغيرها)
-                if (videoContainer.requestFullscreen) {
-                    await videoContainer.requestFullscreen().catch(err => console.log(err));
-                } else if (videoContainer.webkitRequestFullscreen) { /* Safari */
-                    videoContainer.webkitRequestFullscreen();
+        // --- ملء الشاشة القوي والمجبر لجميع الأجهزة ---
+        function toggleFullScreen() {
+            const doc = window.document;
+            const docEl = videoContainer;
+
+            const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                // الدخول في ملء الشاشة
+                if (requestFullScreen) {
+                    requestFullScreen.call(docEl).catch(err => console.log(err));
+                } else if (video.webkitEnterFullscreen) {
+                    // للمتصفحات العنيدة مثل Safari iOS
+                    video.webkitEnterFullscreen();
                 }
-                
-                // قلب الشاشة بالعرض
+
+                // محاولة تدوير الشاشة بالعرض
                 try {
                     if (screen.orientation && screen.orientation.lock) {
-                        await screen.orientation.lock('landscape');
+                        screen.orientation.lock('landscape').catch(e => console.log(e));
                     }
-                } catch (e) { console.log('Orientation lock not supported'); }
-                
+                } catch (error) {}
+
                 fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress"></i>';
             } else {
                 // الخروج من ملء الشاشة
-                if (document.exitFullscreen) {
-                    await document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
+                if (cancelFullScreen) {
+                    cancelFullScreen.call(doc);
                 }
                 
                 try {
                     if (screen.orientation && screen.orientation.unlock) {
                         screen.orientation.unlock();
                     }
-                } catch (e) {}
-                
+                } catch (error) {}
+
                 fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
             }
         }
         
         fullscreenBtn.onclick = toggleFullScreen;
 
-        // الخروج من ملء الشاشة عند زر الرجوع في الهاتف
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        // في حالة إن اليوزر خرج من ملء الشاشة بزرار الموبايل نفسه (Back)
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+        document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+        document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+        function updateFullscreenButton() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
                 fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
             }
-        });
+        }
 
     </script>
 </body>
