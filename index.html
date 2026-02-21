@@ -61,7 +61,7 @@
         .episode-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; padding-right: 5px; transition: color 0.3s; display: flex; align-items: center; gap: 8px; }
         .episode-card-wrapper:hover .episode-title { color: var(--primary); }
 
-        /* --- المشغل الاحترافي --- */
+        /* --- المشغل الاحترافي (التصميم السلس) --- */
         .player-overlay { 
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
             z-index: 9999; backdrop-filter: blur(10px); flex-direction: column; 
@@ -80,19 +80,10 @@
             display: flex; align-items: center; justify-content: center; 
         }
         
-        /* إعدادات Iframe الخاصة بـ Embed Code المخصصة للموبايل */
-        #iframeContainer { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: none; z-index: 50; background: #000;
-        }
-        #iframeContainer iframe { 
-            width: 100% !important; height: 100% !important; border: none !important; 
-            position: absolute; top: 0; left: 0; pointer-events: auto !important;
-        }
-
-        .video-container:fullscreen { max-width: 100%; width: 100%; height: 100%; }
+        .video-container:fullscreen { max-width: 100%; width: 100%; height: 100%; aspect-ratio: auto; }
+        .video-container:-webkit-full-screen { max-width: 100%; width: 100%; height: 100%; aspect-ratio: auto; }
         
-        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; display: block;}
+        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; }
 
         .center-play-pause { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -111,13 +102,14 @@
 
         .controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.95)); padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 10px; opacity: 0; pointer-events: none; transition: opacity 0.4s; direction: ltr; z-index: 30; }
         .controls-row { display: flex; align-items: center; gap: 20px; width: 100%; }
-        .controls button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; transition: transform 0.2s; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
+        .controls button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; transition: transform 0.2s, color 0.2s; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
+        .controls button:hover { transform: scale(1.2); color: var(--primary); }
         
         .video-container.controls-active .center-play-pause { opacity: 1; pointer-events: auto; }
         .video-container.controls-active .controls { opacity: 1; pointer-events: auto; }
 
         .progress-wrapper { width: 100%; padding: 15px 0; cursor: pointer; touch-action: none; }
-        .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; position: relative; transition: height 0.2s;}
+        .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; position: relative; transition: height 0.2s; }
         .progress-wrapper:hover .progress-container, .progress-wrapper:active .progress-container { height: 8px; }
         .progress-bar { height: 100%; background: var(--primary); width: 0%; border-radius: 5px; position: relative; pointer-events: none; }
         .progress-bar::after { content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; background: white; border-radius: 50%; opacity: 0; transition: opacity 0.2s; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
@@ -125,16 +117,20 @@
 
         .time { color: #ddd; font-size: 14px; font-family: monospace; user-select: none; }
         .spacer { flex-grow: 1; }
+        
         .loader { text-align: center; padding: 50px; font-size: 20px; color: var(--text-muted); grid-column: 1 / -1; }
 
         @media (max-width: 768px) {
-            .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-            .series-hero { padding: 20px; height: auto; flex-direction: column; text-align: center; }
-            .series-hero-content { flex-direction: column; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+            .series-hero { flex-direction: column; align-items: center; height: auto; text-align: center; padding: 30px 20px; }
+            .series-hero-content { flex-direction: column; gap: 15px; }
+            header { padding: 15px 20px; }
+            .main-container { padding-top: 80px; }
+            h1 { font-size: 22px; }
             .series-hero-img { width: 150px; }
             .series-hero-info h2 { font-size: 28px; }
             .controls { padding: 10px; }
-            .controls button { font-size: 20px; width: 30px; height: 30px; }
+            .controls button { font-size: 20px; width: 30px; height: 30px;}
             .time { font-size: 12px; }
             .close-player { top: 15px; right: 15px; font-size: 25px; }
             .center-play-pause { width: 70px; height: 70px; font-size: 35px; }
@@ -171,8 +167,8 @@
 
     <div class="player-overlay" id="playerOverlay">
         <i class="fa-solid fa-times close-player" onclick="closePlayer()"></i>
+        
         <div class="video-container" id="videoContainer">
-            <div id="iframeContainer"></div>
             <video id="customVideo" playsinline webkit-playsinline></video>
             
             <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-pause"></i></div>
@@ -181,7 +177,9 @@
             
             <div class="controls" id="videoControls">
                 <div class="progress-wrapper" id="progressContainer">
-                    <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
                 </div>
                 <div class="controls-row">
                     <button id="playPauseBtn"><i class="fa-solid fa-play"></i></button>
@@ -242,7 +240,7 @@
         function createSeriesCard(info, episodes) {
             const card = document.createElement('div');
             card.className = 'series-card';
-            card.innerHTML = `<img src="${info.image}"><div class="card-gradient"><h3 class="title">${info.name}</h3></div><div class="play-overlay"><i class="fa-solid fa-circle-play"></i></div>`;
+            card.innerHTML = `<img src="${info.image}" alt="${info.name}" loading="lazy"><div class="card-gradient"><h3 class="title">${info.name}</h3></div><div class="play-overlay"><i class="fa-solid fa-circle-play"></i></div>`;
             card.onclick = () => showEpisodes(info.name, info.image, episodes);
             seriesGrid.appendChild(card);
         }
@@ -255,12 +253,13 @@
             heroBg.style.backgroundImage = `url('${seriesImage}')`;
             heroImg.src = seriesImage;
             episodesListContainer.innerHTML = '';
+
             if (episodes) {
                 Object.values(episodes).forEach((ep) => {
                     const epWrapper = document.createElement('div');
                     epWrapper.className = 'episode-card-wrapper';
-                    epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px; margin-left: 5px;"></i> ${ep.title}</h4>`;
-                    epWrapper.onclick = () => openPlayer(ep.video, ep.embedCode);
+                    epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${ep.title}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${ep.title}</h4>`;
+                    epWrapper.onclick = () => openPlayer(ep.video);
                     episodesListContainer.appendChild(epWrapper);
                 });
             } else {
@@ -270,63 +269,48 @@
 
         window.showMainView = () => { episodesView.style.display = 'none'; mainView.style.display = 'block'; }
 
-        // --- عناصر المشغل ---
+        // --- المشغل الاحترافي الأساسي ---
         const video = document.getElementById('customVideo');
-        const iframeContainer = document.getElementById('iframeContainer');
         const playerOverlay = document.getElementById('playerOverlay');
         const videoContainer = document.getElementById('videoContainer');
-        const videoControls = document.getElementById('videoControls');
-        const progressBar = document.getElementById('progressBar');
-        const progressContainer = document.getElementById('progressContainer');
-        const timeDisplay = document.getElementById('timeDisplay');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const centerPlayIcon = document.getElementById('centerPlayIcon');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const muteBtn = document.getElementById('muteBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
         const skipLeft = document.getElementById('skipLeft');
         const skipRight = document.getElementById('skipRight');
-        const muteBtn = document.getElementById('muteBtn');
 
         let controlsTimeout;
 
-        window.openPlayer = (url, embedCode) => {
-            playerOverlay.style.display = 'flex';
-            
-            if (embedCode) {
-                video.style.display = 'none';
-                videoControls.style.display = 'none';
-                centerPlayIcon.style.display = 'none';
-                iframeContainer.style.display = 'block';
-                iframeContainer.innerHTML = embedCode;
-            } else if (url) {
-                iframeContainer.style.display = 'none';
-                iframeContainer.innerHTML = '';
-                video.style.display = 'block';
-                videoControls.style.display = 'flex';
-                centerPlayIcon.style.display = 'flex';
-                
-                video.src = url;
-                video.load(); 
-                
-                // تشغيل مباشر متوافق مع الموبايل لأنه مرتبط بـ onclick
-                let playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        updatePlayIcon();
-                        resetControlsTimeout();
-                    }).catch(() => {
-                        video.muted = true;
-                        video.play();
-                        updatePlayIcon();
-                        resetControlsTimeout();
-                    });
-                }
+        window.openPlayer = (url) => {
+            if (!url) {
+                alert("نعتذر، لا يوجد رابط مباشر لهذه الحلقة.");
+                return;
             }
+            video.src = url;
+            playerOverlay.style.display = 'flex';
+            video.play().then(() => {
+                updatePlayIcon();
+                resetControlsTimeout();
+            }).catch((err) => {
+                console.log("تشغيل تلقائي معلق:", err);
+                updatePlayIcon();
+                resetControlsTimeout();
+            });
         };
 
         window.closePlayer = () => {
             video.pause();
+            video.currentTime = 0;
             video.src = "";
-            iframeContainer.innerHTML = '';
             playerOverlay.style.display = 'none';
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
         };
 
         function togglePlay() {
@@ -337,25 +321,31 @@
         }
 
         function updatePlayIcon() {
-            const icon = video.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
-            playPauseBtn.innerHTML = icon;
-            centerPlayIcon.innerHTML = icon;
+            const iconHTML = video.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+            playPauseBtn.innerHTML = iconHTML;
+            centerPlayIcon.innerHTML = iconHTML;
         }
 
         playPauseBtn.onclick = togglePlay;
-        centerPlayIcon.onclick = (e) => { e.stopPropagation(); togglePlay(); };
+        
+        centerPlayIcon.onclick = (e) => {
+            e.stopPropagation();
+            togglePlay();
+        };
 
         function resetControlsTimeout() {
-            if(iframeContainer.style.display === 'block') return;
             videoContainer.classList.add('controls-active');
+            videoContainer.style.cursor = "default";
             clearTimeout(controlsTimeout);
             controlsTimeout = setTimeout(() => {
-                if(!video.paused) videoContainer.classList.remove('controls-active');
+                if(!video.paused) {
+                    videoContainer.classList.remove('controls-active');
+                    videoContainer.style.cursor = "none";
+                }
             }, 3000);
         }
 
         function toggleControls() {
-            if(iframeContainer.style.display === 'block') return;
             if (videoContainer.classList.contains('controls-active')) {
                 videoContainer.classList.remove('controls-active');
                 clearTimeout(controlsTimeout);
@@ -363,10 +353,9 @@
                 resetControlsTimeout();
             }
         }
-
+        
         videoContainer.addEventListener('mousemove', resetControlsTimeout);
 
-        // --- نظام النقر المزدوج والمفرد (للموبايل والكمبيوتر) ---
         let lastTapTime = 0;
         let singleTapTimeout;
 
@@ -387,7 +376,7 @@
             } else {
                 if (tapLength < 300 && tapLength > 0) {
                     clearTimeout(singleTapTimeout);
-                    document.getElementById('fullscreenBtn').click(); 
+                    toggleFullScreen(); 
                 } else {
                     singleTapTimeout = setTimeout(() => { togglePlay(); }, 300);
                 }
@@ -395,7 +384,29 @@
             lastTapTime = currentTime;
         });
 
-        // --- نظام السحب المتقدم لشريط الوقت ---
+        function showSkipIndicator(direction) {
+            const el = direction === 'forward' ? skipRight : skipLeft;
+            el.style.display = 'block';
+            el.style.animation = 'none';
+            void el.offsetWidth; 
+            el.style.animation = 'fadeOutRipple 0.5s forwards';
+            setTimeout(() => { el.style.display = 'none'; }, 500);
+            resetControlsTimeout();
+        }
+
+        function skipForward() { video.currentTime = Math.min(video.currentTime + 10, video.duration || 0); showSkipIndicator('forward'); }
+        function skipBackward() { video.currentTime = Math.max(video.currentTime - 10, 0); showSkipIndicator('backward'); }
+
+        document.addEventListener('keydown', (e) => {
+            if (playerOverlay.style.display !== 'flex') return;
+            switch(e.key) {
+                case 'ArrowRight': skipForward(); break;
+                case 'ArrowLeft': skipBackward(); break;
+                case ' ': e.preventDefault(); togglePlay(); break;
+                case 'f': case 'F': toggleFullScreen(); break;
+            }
+        });
+
         let isDragging = false;
         let wasPlaying = false;
 
@@ -431,16 +442,6 @@
             }
         });
 
-        video.ontimeupdate = () => {
-            if(!isDragging) {
-                const percent = (video.currentTime / video.duration) * 100;
-                progressBar.style.width = `${percent}%`;
-                timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
-            }
-        };
-
-        video.onloadedmetadata = () => { timeDisplay.textContent = `00:00 / ${formatTime(video.duration)}`; };
-
         function formatTime(seconds) {
             if (isNaN(seconds)) return "00:00";
             const h = Math.floor(seconds / 3600);
@@ -448,37 +449,63 @@
             const s = Math.floor(seconds % 60);
             return h > 0 ? `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}` : `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
         }
+        
+        video.ontimeupdate = () => {
+            if(!isDragging) {
+                const percent = (video.currentTime / video.duration) * 100;
+                progressBar.style.width = `${percent}%`;
+                timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+            }
+        };
+        video.onloadedmetadata = () => { timeDisplay.textContent = `00:00 / ${formatTime(video.duration)}`; };
 
-        // --- أزرار التحكم الإضافية ---
         muteBtn.onclick = () => {
             video.muted = !video.muted;
             muteBtn.innerHTML = video.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
         };
 
-        function showSkipIndicator(direction) {
-            const el = direction === 'forward' ? skipRight : skipLeft;
-            el.style.display = 'block';
-            el.style.animation = 'none';
-            void el.offsetWidth; 
-            el.style.animation = 'fadeOutRipple 0.5s forwards';
-            setTimeout(() => { el.style.display = 'none'; }, 500);
-            resetControlsTimeout();
-        }
-
-        window.skipForward = () => { video.currentTime = Math.min(video.currentTime + 10, video.duration || 0); showSkipIndicator('forward'); };
-        window.skipBackward = () => { video.currentTime = Math.max(video.currentTime - 10, 0); showSkipIndicator('backward'); };
-
-        document.getElementById('fullscreenBtn').onclick = async () => {
+        async function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (videoContainer.requestFullscreen) await videoContainer.requestFullscreen();
-                else if (videoContainer.webkitRequestFullscreen) videoContainer.webkitRequestFullscreen();
-                try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(e){}
+                if (videoContainer.requestFullscreen) {
+                    await videoContainer.requestFullscreen().catch(err => console.log(err));
+                } else if (videoContainer.webkitRequestFullscreen) {
+                    videoContainer.webkitRequestFullscreen();
+                } else if (video.webkitEnterFullscreen) {
+                    video.webkitEnterFullscreen();
+                }
+
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape');
+                    }
+                } catch (e) {}
             } else {
-                if (document.exitFullscreen) await document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch(e){}
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                
+                try {
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                    }
+                } catch (e) {}
             }
-        };
+        }
+        
+        fullscreenBtn.onclick = toggleFullScreen;
+
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+
+        function updateFullscreenButton() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
+            } else {
+                fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress"></i>';
+            }
+        }
 
     </script>
 </body>
