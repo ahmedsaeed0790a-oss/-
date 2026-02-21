@@ -61,7 +61,7 @@
         .episode-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; padding-right: 5px; transition: color 0.3s; display: flex; align-items: center; gap: 8px; }
         .episode-card-wrapper:hover .episode-title { color: var(--primary); }
 
-        /* --- المشغل الاحترافي (التصميم السلس) --- */
+        /* --- المشغل الاحترافي --- */
         .player-overlay { 
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
             z-index: 9999; backdrop-filter: blur(10px); flex-direction: column; 
@@ -80,13 +80,32 @@
             display: flex; align-items: center; justify-content: center; 
         }
         
-        /* ضبط ملء الشاشة الرسمي بدون أكواد إجبارية بتبوظ الشكل */
+        /* --- إعدادات Iframe (معدلة وحاسمة للموبايل) --- */
+        #iframeContainer { 
+            position: absolute; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%; 
+            display: none; 
+            z-index: 9999; /* نرفعه فوق كل شيء لضمان استجابته للمس */
+            background: #000;
+        }
+        
+        #iframeContainer iframe { 
+            position: absolute !important;
+            top: 0 !important; 
+            left: 0 !important;
+            width: 100% !important; 
+            height: 100% !important; 
+            max-width: 100% !important;
+            border: none !important; 
+            pointer-events: auto !important; /* إجبار المتصفح على قبول اللمس */
+        }
+
         .video-container:fullscreen { max-width: 100%; width: 100%; height: 100%; aspect-ratio: auto; }
         .video-container:-webkit-full-screen { max-width: 100%; width: 100%; height: 100%; aspect-ratio: auto; }
         
         video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; }
 
-        /* زر الإيقاف/التشغيل في منتصف الشاشة (للموبايل والكمبيوتر) */
         .center-play-pause { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             font-size: 45px; color: white; background: rgba(0,0,0,0.6); 
@@ -96,24 +115,20 @@
         }
         .center-play-pause:active { transform: translate(-50%, -50%) scale(0.9); }
         
-        /* مؤشرات التقديم والتأخير */
         .skip-indicator { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; padding: 20px 30px; border-radius: 50%; font-size: 20px; font-weight: bold; display: none; z-index: 20; pointer-events: none; text-align: center; }
         .skip-indicator i { display: block; font-size: 30px; margin-bottom: 5px; }
         .skip-indicator.right { right: 15%; }
         .skip-indicator.left { left: 15%; }
         @keyframes fadeOutRipple { 0% { opacity: 1; transform: translateY(-50%) scale(0.8); } 50% { opacity: 1; transform: translateY(-50%) scale(1.1); } 100% { opacity: 0; transform: translateY(-50%) scale(1.3); } }
 
-        /* شريط التحكم السفلي */
         .controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.95)); padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 10px; opacity: 0; pointer-events: none; transition: opacity 0.4s; direction: ltr; z-index: 30; }
         .controls-row { display: flex; align-items: center; gap: 20px; width: 100%; }
         .controls button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; transition: transform 0.2s, color 0.2s; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
         .controls button:hover { transform: scale(1.2); color: var(--primary); }
         
-        /* إظهار الأزرار */
         .video-container.controls-active .center-play-pause { opacity: 1; pointer-events: auto; }
         .video-container.controls-active .controls { opacity: 1; pointer-events: auto; }
 
-        /* شريط التقدم السلس */
         .progress-wrapper { width: 100%; padding: 15px 0; cursor: pointer; touch-action: none; }
         .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; position: relative; transition: height 0.2s; }
         .progress-wrapper:hover .progress-container, .progress-wrapper:active .progress-container { height: 8px; }
@@ -175,6 +190,8 @@
         <i class="fa-solid fa-times close-player" onclick="closePlayer()"></i>
         
         <div class="video-container" id="videoContainer">
+            <div id="iframeContainer"></div>
+            
             <video id="customVideo" playsinline></video>
             
             <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-pause"></i></div>
@@ -265,7 +282,9 @@
                     const epWrapper = document.createElement('div');
                     epWrapper.className = 'episode-card-wrapper';
                     epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${ep.title}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${ep.title}</h4>`;
-                    epWrapper.onclick = () => openPlayer(ep.video);
+                    
+                    epWrapper.onclick = () => openPlayer(ep.video, ep.embedCode);
+                    
                     episodesListContainer.appendChild(epWrapper);
                 });
             } else {
@@ -275,10 +294,11 @@
 
         window.showMainView = () => { episodesView.style.display = 'none'; mainView.style.display = 'block'; }
 
-        // --- المشغل الاحترافي الأساسي ---
         const video = document.getElementById('customVideo');
+        const iframeContainer = document.getElementById('iframeContainer');
         const playerOverlay = document.getElementById('playerOverlay');
         const videoContainer = document.getElementById('videoContainer');
+        const videoControls = document.getElementById('videoControls');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const centerPlayIcon = document.getElementById('centerPlayIcon');
         const progressContainer = document.getElementById('progressContainer');
@@ -291,17 +311,41 @@
 
         let controlsTimeout;
 
-        window.openPlayer = (url) => {
-            video.src = url;
+        window.openPlayer = (url, embedCode) => {
             playerOverlay.style.display = 'flex';
-            video.play();
-            updatePlayIcon();
-            resetControlsTimeout();
+
+            if (embedCode) {
+                video.style.display = 'none';
+                videoControls.style.display = 'none';
+                centerPlayIcon.style.display = 'none';
+                
+                iframeContainer.style.display = 'block';
+                iframeContainer.innerHTML = embedCode; 
+                
+            } else if (url) {
+                iframeContainer.style.display = 'none';
+                iframeContainer.innerHTML = ''; 
+                
+                video.style.display = 'block';
+                videoControls.style.display = 'flex';
+                centerPlayIcon.style.display = 'flex';
+                
+                video.src = url;
+                video.play();
+                updatePlayIcon();
+                resetControlsTimeout();
+            } else {
+                alert("نعتذر، لا يوجد فيديو متوفر لهذه الحلقة.");
+                closePlayer();
+            }
         };
 
         window.closePlayer = () => {
             video.pause();
             video.currentTime = 0;
+            
+            iframeContainer.innerHTML = ''; 
+            
             playerOverlay.style.display = 'none';
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) document.exitFullscreen();
@@ -324,14 +368,13 @@
 
         playPauseBtn.onclick = togglePlay;
         
-        // النقر على زر المنتصف (للموبايل والكمبيوتر)
         centerPlayIcon.onclick = (e) => {
             e.stopPropagation();
             togglePlay();
         };
 
-        // نظام إظهار وإخفاء الأزرار بذكاء
         function resetControlsTimeout() {
+            if(iframeContainer.style.display === 'block') return; 
             videoContainer.classList.add('controls-active');
             videoContainer.style.cursor = "default";
             clearTimeout(controlsTimeout);
@@ -344,6 +387,7 @@
         }
 
         function toggleControls() {
+            if(iframeContainer.style.display === 'block') return;
             if (videoContainer.classList.contains('controls-active')) {
                 videoContainer.classList.remove('controls-active');
                 clearTimeout(controlsTimeout);
@@ -354,7 +398,6 @@
         
         videoContainer.addEventListener('mousemove', resetControlsTimeout);
 
-        // --- نظام اللمس والنقر المباشر على الفيديو (التفرقة بين الماوس واللمس) ---
         let lastTapTime = 0;
         let singleTapTimeout;
 
@@ -363,28 +406,21 @@
             const tapLength = currentTime - lastTapTime;
 
             if (e.pointerType === 'touch') {
-                // الموبايل (اللمس)
                 if (tapLength < 300 && tapLength > 0) {
-                    clearTimeout(singleTapTimeout); // إلغاء النقر المفرد
+                    clearTimeout(singleTapTimeout); 
                     const rect = video.getBoundingClientRect();
                     const tapX = e.clientX - rect.left;
                     if (tapX > rect.width / 2) skipForward();
                     else skipBackward();
                 } else {
-                    // نقرة واحدة بالموبايل بتظهر وتخفي الشريط بس
-                    singleTapTimeout = setTimeout(() => {
-                        toggleControls();
-                    }, 300);
+                    singleTapTimeout = setTimeout(() => { toggleControls(); }, 300);
                 }
             } else {
-                // الكمبيوتر (الماوس)
                 if (tapLength < 300 && tapLength > 0) {
                     clearTimeout(singleTapTimeout);
-                    toggleFullScreen(); // دبل كليك يكبر الشاشة
+                    toggleFullScreen(); 
                 } else {
-                    singleTapTimeout = setTimeout(() => {
-                        togglePlay(); // كليك واحد يوقف ويشغل
-                    }, 300);
+                    singleTapTimeout = setTimeout(() => { togglePlay(); }, 300);
                 }
             }
             lastTapTime = currentTime;
@@ -394,7 +430,7 @@
             const el = direction === 'forward' ? skipRight : skipLeft;
             el.style.display = 'block';
             el.style.animation = 'none';
-            void el.offsetWidth; // Force Reflow
+            void el.offsetWidth; 
             el.style.animation = 'fadeOutRipple 0.5s forwards';
             setTimeout(() => { el.style.display = 'none'; }, 500);
             resetControlsTimeout();
@@ -405,6 +441,7 @@
 
         document.addEventListener('keydown', (e) => {
             if (playerOverlay.style.display !== 'flex') return;
+            if(iframeContainer.style.display === 'block') return; 
             switch(e.key) {
                 case 'ArrowRight': skipForward(); break;
                 case 'ArrowLeft': skipBackward(); break;
@@ -413,7 +450,6 @@
             }
         });
 
-        // --- نظام السحب لشريط الوقت ---
         let isDragging = false;
         let wasPlaying = false;
 
@@ -471,27 +507,22 @@
             muteBtn.innerHTML = video.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
         };
 
-        // --- نظام ملء الشاشة الرسمي الصحيح ---
         async function toggleFullScreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // الدخول في ملء الشاشة
                 if (videoContainer.requestFullscreen) {
                     await videoContainer.requestFullscreen().catch(err => console.log(err));
                 } else if (videoContainer.webkitRequestFullscreen) {
                     videoContainer.webkitRequestFullscreen();
                 } else if (video.webkitEnterFullscreen) {
-                    // الدعم الإضافي للآيفون (iOS Safari)
                     video.webkitEnterFullscreen();
                 }
 
-                // محاولة تدوير الشاشة بالعرض
                 try {
                     if (screen.orientation && screen.orientation.lock) {
                         await screen.orientation.lock('landscape');
                     }
                 } catch (e) {}
             } else {
-                // الخروج من ملء الشاشة
                 if (document.exitFullscreen) {
                     await document.exitFullscreen();
                 } else if (document.webkitExitFullscreen) {
@@ -508,7 +539,6 @@
         
         fullscreenBtn.onclick = toggleFullScreen;
 
-        // تحديث أيقونة ملء الشاشة
         document.addEventListener('fullscreenchange', updateFullscreenButton);
         document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 
