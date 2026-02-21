@@ -61,7 +61,7 @@
         .episode-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; padding-right: 5px; transition: color 0.3s; display: flex; align-items: center; gap: 8px; }
         .episode-card-wrapper:hover .episode-title { color: var(--primary); }
 
-        /* --- المشغل الاحترافي (التصميم السلس) --- */
+        /* --- المشغل الاحترافي --- */
         .player-overlay { 
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
             z-index: 9999; backdrop-filter: blur(10px); flex-direction: column; 
@@ -79,11 +79,12 @@
             background: #000; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
             display: flex; align-items: center; justify-content: center; 
         }
-        
+
         .video-container:fullscreen { max-width: 100%; width: 100%; height: 100%; aspect-ratio: auto; }
         .video-container:-webkit-full-screen { max-width: 100%; width: 100%; height: 100%; aspect-ratio: auto; }
         
-        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; }
+        /* إعدادات الفيديو للهاتف */
+        video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; display: block; cursor: pointer; }
 
         .center-play-pause { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -92,7 +93,6 @@
             opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.2s; z-index: 20; 
             backdrop-filter: blur(5px); cursor: pointer;
         }
-        .center-play-pause:active { transform: translate(-50%, -50%) scale(0.9); }
         
         .skip-indicator { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; padding: 20px 30px; border-radius: 50%; font-size: 20px; font-weight: bold; display: none; z-index: 20; pointer-events: none; text-align: center; }
         .skip-indicator i { display: block; font-size: 30px; margin-bottom: 5px; }
@@ -105,6 +105,7 @@
         .controls button { background: none; border: none; color: white; font-size: 22px; cursor: pointer; transition: transform 0.2s, color 0.2s; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
         .controls button:hover { transform: scale(1.2); color: var(--primary); }
         
+        /* إظهار الأزرار */
         .video-container.controls-active .center-play-pause { opacity: 1; pointer-events: auto; }
         .video-container.controls-active .controls { opacity: 1; pointer-events: auto; }
 
@@ -121,7 +122,7 @@
         .loader { text-align: center; padding: 50px; font-size: 20px; color: var(--text-muted); grid-column: 1 / -1; }
 
         @media (max-width: 768px) {
-            .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
             .series-hero { flex-direction: column; align-items: center; height: auto; text-align: center; padding: 30px 20px; }
             .series-hero-content { flex-direction: column; gap: 15px; }
             header { padding: 15px 20px; }
@@ -169,7 +170,7 @@
         <i class="fa-solid fa-times close-player" onclick="closePlayer()"></i>
         
         <div class="video-container" id="videoContainer">
-            <video id="customVideo" playsinline webkit-playsinline></video>
+            <video id="customVideo" playsinline webkit-playsinline preload="metadata"></video>
             
             <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-pause"></i></div>
             <div class="skip-indicator left" id="skipLeft"><i class="fa-solid fa-backward-step"></i><span>10 ث</span></div>
@@ -258,7 +259,7 @@
                 Object.values(episodes).forEach((ep) => {
                     const epWrapper = document.createElement('div');
                     epWrapper.className = 'episode-card-wrapper';
-                    epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${ep.title}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${ep.title}</h4>`;
+                    epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${ep.title}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px; margin-left: 5px;"></i> ${ep.title}</h4>`;
                     epWrapper.onclick = () => openPlayer(ep.video);
                     episodesListContainer.appendChild(epWrapper);
                 });
@@ -290,16 +291,26 @@
                 alert("نعتذر، لا يوجد رابط مباشر لهذه الحلقة.");
                 return;
             }
-            video.src = url;
+            
             playerOverlay.style.display = 'flex';
-            video.play().then(() => {
-                updatePlayIcon();
-                resetControlsTimeout();
-            }).catch((err) => {
-                console.log("تشغيل تلقائي معلق:", err);
-                updatePlayIcon();
-                resetControlsTimeout();
-            });
+            
+            // إضافة video.load() ضرورية جداً لإجبار متصفحات الموبايل على تحميل المسار الجديد
+            video.src = url;
+            video.load(); 
+
+            let playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    updatePlayIcon();
+                    resetControlsTimeout();
+                }).catch((err) => {
+                    console.log("الموبايل منع التشغيل التلقائي. يجب أن يضغط المستخدم للتشغيل.");
+                    // إذا منع المتصفح التشغيل، نظهر الأزرار لكي يضغط هو للتشغيل
+                    video.pause();
+                    updatePlayIcon();
+                    videoContainer.classList.add('controls-active'); 
+                });
+            }
         };
 
         window.closePlayer = () => {
@@ -326,12 +337,8 @@
             centerPlayIcon.innerHTML = iconHTML;
         }
 
-        playPauseBtn.onclick = togglePlay;
-        
-        centerPlayIcon.onclick = (e) => {
-            e.stopPropagation();
-            togglePlay();
-        };
+        playPauseBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
+        centerPlayIcon.onclick = (e) => { e.stopPropagation(); togglePlay(); };
 
         function resetControlsTimeout() {
             videoContainer.classList.add('controls-active');
@@ -356,32 +363,24 @@
         
         videoContainer.addEventListener('mousemove', resetControlsTimeout);
 
-        let lastTapTime = 0;
+        // --- نظام التفاعل المبسط والأكيد للموبايل والكمبيوتر ---
         let singleTapTimeout;
 
-        video.addEventListener('pointerup', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTapTime;
+        video.addEventListener('click', (e) => {
+            // كليك واحد لفتح/إغلاق الأزرار بدلاً من إيقاف الفيديو مباشرة (مريح أكثر للموبايل)
+            if (singleTapTimeout) clearTimeout(singleTapTimeout);
+            singleTapTimeout = setTimeout(() => {
+                toggleControls();
+            }, 250);
+        });
 
-            if (e.pointerType === 'touch') {
-                if (tapLength < 300 && tapLength > 0) {
-                    clearTimeout(singleTapTimeout); 
-                    const rect = video.getBoundingClientRect();
-                    const tapX = e.clientX - rect.left;
-                    if (tapX > rect.width / 2) skipForward();
-                    else skipBackward();
-                } else {
-                    singleTapTimeout = setTimeout(() => { toggleControls(); }, 300);
-                }
-            } else {
-                if (tapLength < 300 && tapLength > 0) {
-                    clearTimeout(singleTapTimeout);
-                    toggleFullScreen(); 
-                } else {
-                    singleTapTimeout = setTimeout(() => { togglePlay(); }, 300);
-                }
-            }
-            lastTapTime = currentTime;
+        // تقديم وتأخير بالضغط المزدوج (يعمل على الموبايل والكمبيوتر بسلاسة)
+        video.addEventListener('dblclick', (e) => {
+            if (singleTapTimeout) clearTimeout(singleTapTimeout); // إلغاء الكليك الواحد
+            const rect = video.getBoundingClientRect();
+            const tapX = e.clientX - rect.left;
+            if (tapX > rect.width / 2) skipForward();
+            else skipBackward();
         });
 
         function showSkipIndicator(direction) {
