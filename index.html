@@ -113,6 +113,8 @@
        
         video { width: 100%; height: 100%; object-fit: contain; outline: none; background: #000; }
 
+        #embedContainer iframe { width: 100%; height: 100%; border: none; }
+
         .center-play-pause {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             font-size: 45px; color: white; background: rgba(0,0,0,0.6);
@@ -210,24 +212,29 @@
         <i class="fa-solid fa-times close-player" onclick="closePlayer()"></i>
        
         <div class="video-container" id="videoContainer">
+            
+            <div id="embedContainer" style="display:none; width: 100%; height: 100%;"></div>
+
             <video id="customVideo" playsinline></video>
            
-            <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-pause"></i></div>
-            <div class="skip-indicator left" id="skipLeft"><i class="fa-solid fa-backward-step"></i><span>10 ث</span></div>
-            <div class="skip-indicator right" id="skipRight"><i class="fa-solid fa-forward-step"></i><span>10 ث</span></div>
-           
-            <div class="controls" id="videoControls">
-                <div class="progress-wrapper" id="progressContainer">
-                    <div class="progress-container">
-                        <div class="progress-bar" id="progressBar"></div>
+            <div id="customControlsWrapper">
+                <div class="center-play-pause" id="centerPlayIcon"><i class="fa-solid fa-pause"></i></div>
+                <div class="skip-indicator left" id="skipLeft"><i class="fa-solid fa-backward-step"></i><span>10 ث</span></div>
+                <div class="skip-indicator right" id="skipRight"><i class="fa-solid fa-forward-step"></i><span>10 ث</span></div>
+               
+                <div class="controls" id="videoControls">
+                    <div class="progress-wrapper" id="progressContainer">
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
                     </div>
-                </div>
-                <div class="controls-row">
-                    <button id="playPauseBtn"><i class="fa-solid fa-play"></i></button>
-                    <button id="muteBtn"><i class="fa-solid fa-volume-high"></i></button>
-                    <div class="time" id="timeDisplay">00:00 / 00:00</div>
-                    <div class="spacer"></div>
-                    <button id="fullscreenBtn"><i class="fa-solid fa-expand"></i></button>
+                    <div class="controls-row">
+                        <button id="playPauseBtn"><i class="fa-solid fa-play"></i></button>
+                        <button id="muteBtn"><i class="fa-solid fa-volume-high"></i></button>
+                        <div class="time" id="timeDisplay">00:00 / 00:00</div>
+                        <div class="spacer"></div>
+                        <button id="fullscreenBtn"><i class="fa-solid fa-expand"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -403,7 +410,7 @@
             seriesGrid.appendChild(card);
         }
 
-        // 🔴 الكود الأصلي لعرض الحلقات بدون ترتيب
+        // إرجاع دالة عرض الحلقات الأصلية بدون أي ترتيب
         function showEpisodes(seriesName, seriesImage, episodes) {
             mainView.style.display = 'none';
             episodesView.style.display = 'block';
@@ -418,10 +425,12 @@
                     const epWrapper = document.createElement('div');
                     epWrapper.className = 'episode-card-wrapper';
                     const epTitle = ep.title || 'بدون عنوان';
-                    const epVideo = ep.video || '';
                     
                     epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${epTitle}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${epTitle}</h4>`;
-                    epWrapper.onclick = () => openPlayer(epVideo);
+                    
+                    // تمرير الكائن ep بالكامل ليدعم الـ videoUrl و الـ embedCode
+                    epWrapper.onclick = () => openPlayer(ep);
+                    
                     episodesListContainer.appendChild(epWrapper);
                 });
             } else {
@@ -431,10 +440,12 @@
 
         window.showMainView = () => { episodesView.style.display = 'none'; mainView.style.display = 'block'; }
 
-        // --- المشغل الاحترافي ---
+        // --- المشغل الاحترافي المُعدل لدعم كود التضمين (Embed Code) ---
         const video = document.getElementById('customVideo');
         const playerOverlay = document.getElementById('playerOverlay');
         const videoContainer = document.getElementById('videoContainer');
+        const embedContainer = document.getElementById('embedContainer');
+        const customControlsWrapper = document.getElementById('customControlsWrapper');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const centerPlayIcon = document.getElementById('centerPlayIcon');
         const progressContainer = document.getElementById('progressContainer');
@@ -447,21 +458,45 @@
 
         let controlsTimeout;
 
-        window.openPlayer = (url) => {
-            if(!url) {
-                alert("لا يوجد رابط فيديو لهذه الحلقة!");
+        window.openPlayer = (ep) => {
+            const videoUrl = ep.video || '';
+            const embedCode = ep.embedCode || '';
+
+            if(!videoUrl && !embedCode) {
+                alert("لا يوجد رابط فيديو أو كود تضمين لهذه الحلقة!");
                 return;
             }
-            video.src = url;
+
             playerOverlay.style.display = 'flex';
-            video.play();
-            updatePlayIcon();
-            resetControlsTimeout();
+
+            if (embedCode) {
+                // إذا كان هناك كود تضمين، يتم إخفاء المشغل العادي وعرض الـ Iframe
+                video.style.display = 'none';
+                customControlsWrapper.style.display = 'none';
+                video.pause();
+                video.src = '';
+                
+                embedContainer.style.display = 'block';
+                embedContainer.innerHTML = embedCode;
+            } else {
+                // إذا كان رابط MP4، يتم تشغيل المشغل المخصص
+                embedContainer.style.display = 'none';
+                embedContainer.innerHTML = '';
+                
+                video.style.display = 'block';
+                customControlsWrapper.style.display = 'block';
+                
+                video.src = videoUrl;
+                video.play();
+                updatePlayIcon();
+                resetControlsTimeout();
+            }
         };
 
         window.closePlayer = () => {
             video.pause();
             video.currentTime = 0;
+            embedContainer.innerHTML = ''; // تدمير الـ iframe لإيقاف الفيديو
             playerOverlay.style.display = 'none';
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) document.exitFullscreen();
