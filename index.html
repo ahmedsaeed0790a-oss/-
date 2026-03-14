@@ -89,7 +89,7 @@
         .episode-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; padding-right: 5px; transition: color 0.3s; display: flex; align-items: center; gap: 8px; }
         .episode-card-wrapper:hover .episode-title { color: var(--primary); }
 
-        /* --- المشغل الاحترافي (التصميم السلس) --- */
+        /* --- المشغل الاحترافي --- */
         .player-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 9999; backdrop-filter: blur(10px); flex-direction: column;
@@ -251,15 +251,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- متغيرات النظام وتسجيل الدخول ---
+        // --- نظام تسجيل الدخول والحماية ---
         const loginOverlay = document.getElementById('loginOverlay');
         const appContent = document.getElementById('appContent');
         const loginBtn = document.getElementById('loginBtn');
         const accessCodeInput = document.getElementById('accessCodeInput');
         const loginErrorMsg = document.getElementById('loginErrorMsg');
-        let codeListener = null; // لمراقبة حالة الكود اللحظية
+        
+        let codeListener = null;
 
-        // 🔴 دالة الخروج الإجباري مع رسالة
+        // دالة الخروج الإجباري مع إغلاق المشغل
         window.logoutWithMessage = (msg) => {
             sessionStorage.removeItem('isLogged');
             sessionStorage.removeItem('currentCode');
@@ -267,40 +268,44 @@
             loginOverlay.style.display = 'flex';
             accessCodeInput.value = '';
             loginErrorMsg.textContent = msg;
-            closePlayer(); // إغلاق الفيديو إن كان مفتوحاً
+            if (codeListener) codeListener(); // إيقاف المستمع
+            closePlayer();
         };
 
-        // زر الخروج العادي
         window.logout = () => {
             logoutWithMessage('تم تسجيل الخروج بنجاح.');
         };
 
-        // 🔴 دالة التحقق من الجهاز (آيفون فقط) ومراقبة الكود لحظياً
+        // 🔴 التحقق من الجهاز ومراقبة الكود لحظياً 
         async function verifyDeviceAndMonitorStatus(code) {
             const userAgent = navigator.userAgent.toLowerCase();
-            // السماح بأجهزة أبل فقط (آيفون، آيباد، ماك)
             const isIphoneOrMac = userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod") || userAgent.includes("mac");
             
             if (!isIphoneOrMac) {
-                // إذا لم يكن آيفون، قم بتعطيل الكود (حرقه) في الداتابيز وطرده
-                await set(ref(db, `codes/${code}`), false);
-                logoutWithMessage("❌ تم رصد دخول من جهاز غير مسموح به. تم تعطيل هذا الكود نهائياً.");
+                // محاولة تعطيل الكود (حتى لو مفيش صلاحية هيتطرد محلياً)
+                try {
+                    await set(ref(db, `codes/${code}`), false);
+                } catch (e) {
+                    console.warn("تم الطرد محلياً");
+                }
+                logoutWithMessage("❌ تم رصد دخول من جهاز غير آيفون. تم حظر الدخول.");
                 return false;
             }
 
-            // إذا كان الجهاز سليماً، نقوم ببدء المراقبة اللحظية للكود
+            // المراقبة اللحظية: لو الكود اتغير لـ false يطرد فورا
             const codeRef = ref(db, `codes/${code}`);
             codeListener = onValue(codeRef, (snapshot) => {
-                if (!snapshot.exists() || snapshot.val() !== true) {
-                    // إذا تحول الكود إلى false أو تم حذفه، يطرد فوراً
-                    logoutWithMessage("تم تعطيل هذا الكود من قبل الإدارة.");
+                const val = snapshot.val();
+                // التأكد من أن القيمة ليست true (سواء نصية أو منطقية)
+                if (!snapshot.exists() || (String(val) !== 'true')) {
+                    logoutWithMessage("تم تعطيل هذا الحساب أو الكود من قبل الإدارة.");
                 }
             });
 
             return true;
         }
 
-        // فحص تلقائي عند تحميل الصفحة إذا كان مسجل دخول مسبقاً
+        // فحص الجلسة المحفوظة عند تحديث الصفحة
         if (sessionStorage.getItem('isLogged') === 'true') {
             const savedCode = sessionStorage.getItem('currentCode');
             if (savedCode) {
@@ -312,7 +317,6 @@
             }
         }
 
-        // حدث الضغط على زر الدخول
         loginBtn.addEventListener('click', async () => {
             const code = accessCodeInput.value.trim();
             if (!code) {
@@ -326,9 +330,9 @@
             try {
                 const codeRef = ref(db, `codes/${code}`);
                 const snapshot = await get(codeRef);
+                const val = snapshot.val();
 
-                if (snapshot.exists() && snapshot.val() === true) {
-                    // الكود صحيح مبدئياً، نقوم بالتحقق من نوع الجهاز والمراقبة اللحظية
+                if (snapshot.exists() && String(val) === 'true') {
                     const isDeviceValid = await verifyDeviceAndMonitorStatus(code);
                     
                     if (isDeviceValid) {
@@ -338,11 +342,11 @@
                         showApp();
                     }
                 } else {
-                    loginErrorMsg.textContent = 'الكود غير صحيح أو معطل مسبقاً.';
+                    loginErrorMsg.textContent = 'الكود غير صحيح أو تم تعطيله.';
                 }
             } catch (error) {
                 console.error("Login Error:", error);
-                loginErrorMsg.textContent = 'حدث خطأ أثناء الاتصال بقاعدة البيانات.';
+                loginErrorMsg.textContent = 'حدث خطأ، يرجى المحاولة لاحقاً.';
             } finally {
                 loginBtn.textContent = 'دخول';
                 loginBtn.disabled = false;
@@ -356,10 +360,10 @@
         function showApp() {
             loginOverlay.style.display = 'none';
             appContent.style.display = 'block';
-            loadData(); // تحميل المحتوى
+            loadData(); 
         }
 
-        // منع التحميل (كليك يمين)
+        // منع الكليك يمين
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         // --- محتوى المنصة الأصلي ---
@@ -378,29 +382,35 @@
         });
 
         function loadData() {
-            onValue(ref(db, 'series'), (snapshot) => {
-                seriesGrid.innerHTML = '';
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    for (const seriesId in data) {
-                        const series = data[seriesId];
-                        if(series.info) createSeriesCard(series.info, series.episodes);
+            try {
+                onValue(ref(db, 'series'), (snapshot) => {
+                    seriesGrid.innerHTML = '';
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        for (const seriesId in data) {
+                            const series = data[seriesId];
+                            if(series && series.info) createSeriesCard(series.info, series.episodes);
+                        }
+                    } else {
+                        seriesGrid.innerHTML = '<div class="loader">لا توجد مسلسلات مضافة بعد.</div>';
                     }
-                } else {
-                    seriesGrid.innerHTML = '<div class="loader">لا توجد مسلسلات مضافة بعد.</div>';
-                }
-            });
+                });
+            } catch(e) {
+                console.error(e);
+            }
         }
 
         function createSeriesCard(info, episodes) {
             const card = document.createElement('div');
             card.className = 'series-card';
-            card.innerHTML = `<img src="${info.image}" alt="${info.name}" loading="lazy"><div class="card-gradient"><h3 class="title">${info.name}</h3></div><div class="play-overlay"><i class="fa-solid fa-circle-play"></i></div>`;
-            card.onclick = () => showEpisodes(info.name, info.image, episodes);
+            // استخدام fallback لتجنب الأخطاء لو الصورة أو الاسم مش موجودين
+            const imgStr = info.image || '';
+            const nameStr = info.name || 'بدون اسم';
+            card.innerHTML = `<img src="${imgStr}" alt="${nameStr}" loading="lazy"><div class="card-gradient"><h3 class="title">${nameStr}</h3></div><div class="play-overlay"><i class="fa-solid fa-circle-play"></i></div>`;
+            card.onclick = () => showEpisodes(nameStr, imgStr, episodes);
             seriesGrid.appendChild(card);
         }
 
-        // 🔴 استرجاع كود عرض الحلقات الأصلي بدون ترتيب لضمان الاستقرار التام
         function showEpisodes(seriesName, seriesImage, episodes) {
             mainView.style.display = 'none';
             episodesView.style.display = 'block';
@@ -411,11 +421,27 @@
             episodesListContainer.innerHTML = '';
 
             if (episodes) {
-                Object.values(episodes).forEach((ep) => {
+                let epsArray = Object.values(episodes);
+                
+                // 🔴 الترتيب الآمن جداً: بيبحث عن رقم، لو ملقاش مش هيعمل إيرور
+                epsArray.sort((a, b) => {
+                    const titleA = a.title || '';
+                    const titleB = b.title || '';
+                    const matchA = titleA.match(/\d+/);
+                    const matchB = titleB.match(/\d+/);
+                    const numA = matchA ? parseInt(matchA[0], 10) : 0;
+                    const numB = matchB ? parseInt(matchB[0], 10) : 0;
+                    return numA - numB; 
+                });
+
+                epsArray.forEach((ep) => {
                     const epWrapper = document.createElement('div');
                     epWrapper.className = 'episode-card-wrapper';
-                    epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${ep.title}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${ep.title}</h4>`;
-                    epWrapper.onclick = () => openPlayer(ep.video);
+                    const epTitle = ep.title || 'حلقة';
+                    const epVideo = ep.video || '';
+                    
+                    epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${epTitle}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${epTitle}</h4>`;
+                    epWrapper.onclick = () => openPlayer(epVideo);
                     episodesListContainer.appendChild(epWrapper);
                 });
             } else {
@@ -425,7 +451,7 @@
 
         window.showMainView = () => { episodesView.style.display = 'none'; mainView.style.display = 'block'; }
 
-        // --- المشغل الاحترافي الأساسي ---
+        // --- المشغل الاحترافي ---
         const video = document.getElementById('customVideo');
         const playerOverlay = document.getElementById('playerOverlay');
         const videoContainer = document.getElementById('videoContainer');
@@ -442,6 +468,10 @@
         let controlsTimeout;
 
         window.openPlayer = (url) => {
+            if(!url) {
+                alert("لا يوجد رابط فيديو لهذه الحلقة!");
+                return;
+            }
             video.src = url;
             playerOverlay.style.display = 'flex';
             video.play();
