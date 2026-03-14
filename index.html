@@ -260,7 +260,6 @@
         
         let codeListener = null;
 
-        // دالة الخروج الإجباري مع إغلاق المشغل
         window.logoutWithMessage = (msg) => {
             sessionStorage.removeItem('isLogged');
             sessionStorage.removeItem('currentCode');
@@ -268,7 +267,7 @@
             loginOverlay.style.display = 'flex';
             accessCodeInput.value = '';
             loginErrorMsg.textContent = msg;
-            if (codeListener) codeListener(); // إيقاف المستمع
+            if (codeListener) codeListener(); 
             closePlayer();
         };
 
@@ -276,13 +275,11 @@
             logoutWithMessage('تم تسجيل الخروج بنجاح.');
         };
 
-        // 🔴 التحقق من الجهاز ومراقبة الكود لحظياً 
         async function verifyDeviceAndMonitorStatus(code) {
             const userAgent = navigator.userAgent.toLowerCase();
             const isIphoneOrMac = userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod") || userAgent.includes("mac");
             
             if (!isIphoneOrMac) {
-                // محاولة تعطيل الكود (حتى لو مفيش صلاحية هيتطرد محلياً)
                 try {
                     await set(ref(db, `codes/${code}`), false);
                 } catch (e) {
@@ -292,11 +289,9 @@
                 return false;
             }
 
-            // المراقبة اللحظية: لو الكود اتغير لـ false يطرد فورا
             const codeRef = ref(db, `codes/${code}`);
             codeListener = onValue(codeRef, (snapshot) => {
                 const val = snapshot.val();
-                // التأكد من أن القيمة ليست true (سواء نصية أو منطقية)
                 if (!snapshot.exists() || (String(val) !== 'true')) {
                     logoutWithMessage("تم تعطيل هذا الحساب أو الكود من قبل الإدارة.");
                 }
@@ -305,7 +300,6 @@
             return true;
         }
 
-        // فحص الجلسة المحفوظة عند تحديث الصفحة
         if (sessionStorage.getItem('isLogged') === 'true') {
             const savedCode = sessionStorage.getItem('currentCode');
             if (savedCode) {
@@ -363,7 +357,6 @@
             loadData(); 
         }
 
-        // منع الكليك يمين
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         // --- محتوى المنصة الأصلي ---
@@ -403,7 +396,6 @@
         function createSeriesCard(info, episodes) {
             const card = document.createElement('div');
             card.className = 'series-card';
-            // استخدام fallback لتجنب الأخطاء لو الصورة أو الاسم مش موجودين
             const imgStr = info.image || '';
             const nameStr = info.name || 'بدون اسم';
             card.innerHTML = `<img src="${imgStr}" alt="${nameStr}" loading="lazy"><div class="card-gradient"><h3 class="title">${nameStr}</h3></div><div class="play-overlay"><i class="fa-solid fa-circle-play"></i></div>`;
@@ -411,6 +403,7 @@
             seriesGrid.appendChild(card);
         }
 
+        // 🔴 الكود الأصلي لعرض الحلقات بدون ترتيب
         function showEpisodes(seriesName, seriesImage, episodes) {
             mainView.style.display = 'none';
             episodesView.style.display = 'block';
@@ -421,23 +414,10 @@
             episodesListContainer.innerHTML = '';
 
             if (episodes) {
-                let epsArray = Object.values(episodes);
-                
-                // 🔴 الترتيب الآمن جداً: بيبحث عن رقم، لو ملقاش مش هيعمل إيرور
-                epsArray.sort((a, b) => {
-                    const titleA = a.title || '';
-                    const titleB = b.title || '';
-                    const matchA = titleA.match(/\d+/);
-                    const matchB = titleB.match(/\d+/);
-                    const numA = matchA ? parseInt(matchA[0], 10) : 0;
-                    const numB = matchB ? parseInt(matchB[0], 10) : 0;
-                    return numA - numB; 
-                });
-
-                epsArray.forEach((ep) => {
+                Object.values(episodes).forEach((ep) => {
                     const epWrapper = document.createElement('div');
                     epWrapper.className = 'episode-card-wrapper';
-                    const epTitle = ep.title || 'حلقة';
+                    const epTitle = ep.title || 'بدون عنوان';
                     const epVideo = ep.video || '';
                     
                     epWrapper.innerHTML = `<div class="episode-card"><img src="${seriesImage}" alt="${epTitle}" loading="lazy"><div class="play-overlay"><i class="fa-solid fa-play"></i></div></div><h4 class="episode-title"><i class="fa-solid fa-tv" style="color:var(--primary); font-size: 12px;"></i> ${epTitle}</h4>`;
